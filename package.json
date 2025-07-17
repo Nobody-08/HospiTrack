@@ -1,0 +1,10 @@
+{
+  "name": "hospitrack",
+  "version": "1.0.0",
+  "description": "HospiTrack Application",
+  "scripts": {
+    "dev": "cd frontend && npm run dev"
+  },
+  "author": "",
+  "license": "ISC"
+}
