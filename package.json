@@ -11,3 +11,27 @@
     "axios": "^1.9.0"
   }
 }
+
+{
+  "name": "designproject",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Nobody-08/HospiTrack.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Nobody-08/HospiTrack/issues"
+  },
+  "homepage": "https://github.com/Nobody-08/HospiTrack#readme",
+  "description": "",
+  "dependencies": {
+    "vite": "^7.0.5"
+  }
+}
