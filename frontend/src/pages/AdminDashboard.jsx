@@ -1,130 +1,85 @@
-import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import DashboardCard from "../components/DashboardCard";
+import { dashboardAPI, patientsAPI, alertsAPI } from "../api";
+import { useAPI, useRealTimeData } from "../hooks/useAPI";
 import AlertCard from "../components/AlertCard";
 
 const AdminDashboard = () => {
-  const [systemStats, setSystemStats] = useState({});
-  const [recentAlerts, setRecentAlerts] = useState([]);
-  const [recentPatients, setRecentPatients] = useState([]);
-  const [opdTrends, setOpdTrends] = useState({});
+  // Real-time data fetching with auto-refresh every 30 seconds
+  const { data: systemStats, loading: statsLoading, error: statsError } = useRealTimeData(
+    () => dashboardAPI.getSystemStats(),
+    30000 // Refresh every 30 seconds
+  );
 
-  // Mock data - in real app, this would come from API
-  useEffect(() => {
-    const mockStats = {
-      totalPatients: 128,
-      availableBeds: 34,
-      totalBeds: 150,
-      emergencyAlerts: 2,
-      opdToday: 15,
-      opdThisWeek: 89,
-      staffOnDuty: 45,
-      totalStaff: 67,
-      systemUptime: "99.8%",
-      avgResponseTime: "2.3s"
-    };
+  const { data: recentAlerts, loading: alertsLoading } = useAPI(
+    () => alertsAPI.getUnresolved()
+  );
 
-    const mockAlerts = [
-      {
-        id: 1,
-        severity: "critical",
-        title: "ICU Capacity Alert",
-        message: "ICU is at 95% capacity - consider patient transfers",
-        timestamp: new Date().toISOString(),
-        location: "ICU",
-        ward: "ICU",
-        reportedBy: "System Monitor",
-        acknowledged: false
-      },
-      {
-        id: 2,
-        severity: "high",
-        title: "Staff Shortage",
-        message: "Night shift in General Ward is understaffed",
-        timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-        location: "General Ward",
-        ward: "General",
-        reportedBy: "HR System",
-        acknowledged: true,
-        acknowledgedBy: "Admin User",
-        acknowledgedAt: new Date(Date.now() - 15 * 60 * 1000).toISOString()
-      }
-    ];
+  const { data: recentPatients, loading: patientsLoading } = useAPI(
+    () => patientsAPI.getAll({ limit: 5, ordering: '-created_at' })
+  );
 
-    const mockRecentPatients = [
-      {
-        id: 1,
-        name: "Amit Singh",
-        age: 35,
-        ward: "ICU",
-        admissionDate: "2025-01-16",
-        status: "Critical",
-        registeredBy: "Dr. Sharma"
-      },
-      {
-        id: 2,
-        name: "Priya Patel",
-        age: 28,
-        ward: "Maternity",
-        admissionDate: "2025-01-15",
-        status: "Stable",
-        registeredBy: "Nurse Meera"
-      },
-      {
-        id: 3,
-        name: "Arjun Kumar",
-        age: 8,
-        ward: "Pediatrics",
-        admissionDate: "2025-01-15",
-        status: "Recovering",
-        registeredBy: "Dr. Nair"
-      }
-    ];
+  const { data: bedOccupancy, loading: bedsLoading } = useRealTimeData(
+    () => dashboardAPI.getBedOccupancy(),
+    60000 // Refresh every minute
+  );
 
-    const mockOpdTrends = {
-      today: 15,
-      yesterday: 18,
-      thisWeek: 89,
-      lastWeek: 76,
-      thisMonth: 342,
-      lastMonth: 298
-    };
+  const { data: opdStats, loading: opdLoading } = useAPI(
+    () => dashboardAPI.getOpdStats()
+  );
 
-    setSystemStats(mockStats);
-    setRecentAlerts(mockAlerts);
-    setRecentPatients(mockRecentPatients);
-    setOpdTrends(mockOpdTrends);
-  }, []);
+  // Provide default values to prevent undefined errors
+  const safeSystemStats = systemStats || {};
+  const safeOpdStats = opdStats || {};
+  const safeRecentAlerts = recentAlerts || [];
+  const safeRecentPatients = recentPatients || [];
 
-  const handleAcknowledgeAlert = (alertId) => {
-    setRecentAlerts(prev => prev.map(alert =>
-      alert.id === alertId
-        ? {
-            ...alert,
-            acknowledged: true,
-            acknowledgedBy: "Admin User",
-            acknowledgedAt: new Date().toISOString()
-          }
-        : alert
-    ));
+  const handleAcknowledgeAlert = async (alertId) => {
+    try {
+      await alertsAPI.acknowledge(alertId, localStorage.getItem('username') || 'Admin User');
+      // Refresh alerts data
+      window.location.reload(); // Simple refresh for now
+    } catch (error) {
+      console.error('Failed to acknowledge alert:', error);
+      alert('Failed to acknowledge alert. Please try again.');
+    }
   };
 
-  const handleResolveAlert = (alertId) => {
-    setRecentAlerts(prev => prev.map(alert =>
-      alert.id === alertId
-        ? {
-            ...alert,
-            resolved: true,
-            resolvedBy: "Admin User",
-            resolvedAt: new Date().toISOString()
-          }
-        : alert
-    ));
+  const handleResolveAlert = async (alertId) => {
+    try {
+      await alertsAPI.resolve(alertId, localStorage.getItem('username') || 'Admin User', 'Resolved by admin');
+      // Refresh alerts data
+      window.location.reload(); // Simple refresh for now
+    } catch (error) {
+      console.error('Failed to resolve alert:', error);
+      alert('Failed to resolve alert. Please try again.');
+    }
   };
 
-  const bedOccupancyRate = ((systemStats.totalBeds - systemStats.availableBeds) / systemStats.totalBeds * 100).toFixed(1);
-  const staffUtilization = (systemStats.staffOnDuty / systemStats.totalStaff * 100).toFixed(1);
-  const opdGrowth = ((opdTrends.thisWeek - opdTrends.lastWeek) / opdTrends.lastWeek * 100).toFixed(1);
+  // Calculate derived statistics with safe defaults
+  const bedOccupancyRate = safeSystemStats.totalBeds > 0
+    ? ((safeSystemStats.totalBeds - safeSystemStats.availableBeds) / safeSystemStats.totalBeds * 100).toFixed(1)
+    : '0.0';
+
+  const staffUtilization = safeSystemStats.totalStaff > 0
+    ? (safeSystemStats.staffOnDuty / safeSystemStats.totalStaff * 100).toFixed(1)
+    : '0.0';
+
+  const opdGrowth = safeOpdStats.lastWeek > 0
+    ? ((safeOpdStats.thisWeek - safeOpdStats.lastWeek) / safeOpdStats.lastWeek * 100).toFixed(1)
+    : '0.0';
+
+  // Show loading state only if no data at all
+  if (!systemStats && !recentAlerts && !recentPatients) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading dashboard data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -166,7 +121,7 @@ const AdminDashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <DashboardCard
             title="Total Patients"
-            value={systemStats.totalPatients}
+            value={safeSystemStats.totalPatients || 0}
             icon="👥"
             color="blue"
             subtitle="Currently registered"
@@ -175,7 +130,7 @@ const AdminDashboard = () => {
           />
           <DashboardCard
             title="Available Beds"
-            value={systemStats.availableBeds}
+            value={safeSystemStats.availableBeds || 0}
             icon="🛏️"
             color="green"
             subtitle={`${bedOccupancyRate}% occupied`}
@@ -184,7 +139,7 @@ const AdminDashboard = () => {
           />
           <DashboardCard
             title="Emergency Alerts"
-            value={systemStats.emergencyAlerts}
+            value={safeSystemStats.emergencyAlerts || 0}
             icon="🚨"
             color="red"
             subtitle="Require attention"
@@ -193,11 +148,11 @@ const AdminDashboard = () => {
           />
           <DashboardCard
             title="OPD Today"
-            value={systemStats.opdToday}
+            value={safeOpdStats.today || 0}
             icon="📅"
             color="purple"
             subtitle={`${opdGrowth}% vs last week`}
-            trend={parseFloat(opdGrowth)}
+            trend={parseFloat(opdGrowth) || 0}
             linkTo="/opd-schedule"
             linkText="View Schedule"
           />
@@ -229,12 +184,11 @@ const AdminDashboard = () => {
         </div>
 
         {/* Emergency Alerts Section */}
-        {recentAlerts.filter(a => !a.resolved).length > 0 && (
+        {safeRecentAlerts.length > 0 ? (
           <div className="mb-8">
             <h2 className="text-xl font-bold text-gray-900 mb-4">🚨 Recent System Alerts</h2>
             <div className="space-y-4">
-              {recentAlerts
-                .filter(alert => !alert.resolved)
+              {safeRecentAlerts
                 .map(alert => (
                   <AlertCard
                     key={alert.id}
@@ -245,6 +199,11 @@ const AdminDashboard = () => {
                 ))}
             </div>
           </div>
+        ) : (
+          <div className="bg-white rounded-lg shadow-md p-6 text-center text-gray-500">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">🚨 Recent System Alerts</h2>
+            <p>No recent alerts.</p>
+          </div>
         )}
 
         {/* OPD Trends */}
@@ -254,15 +213,15 @@ const AdminDashboard = () => {
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Today</span>
-                <span className="font-semibold">{opdTrends.today} appointments</span>
+                <span className="font-semibold">{safeOpdStats.today || 0} appointments</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">This Week</span>
-                <span className="font-semibold">{opdTrends.thisWeek} appointments</span>
+                <span className="font-semibold">{safeOpdStats.thisWeek || 0} appointments</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">This Month</span>
-                <span className="font-semibold">{opdTrends.thisMonth} appointments</span>
+                <span className="font-semibold">{safeOpdStats.thisMonth || 0} appointments</span>
               </div>
               <div className="pt-4 border-t">
                 <div className="flex justify-between items-center">
@@ -286,27 +245,33 @@ const AdminDashboard = () => {
           {/* Recent Patient Registrations */}
           <div className="bg-white rounded-lg shadow-md p-6">
             <h3 className="text-lg font-bold text-gray-900 mb-4">👥 Recent Patient Registrations</h3>
-            <div className="space-y-4">
-              {recentPatients.map(patient => (
-                <div key={patient.id} className="flex justify-between items-center p-3 bg-gray-50 rounded">
-                  <div>
-                    <p className="font-medium">{patient.name}</p>
-                    <p className="text-sm text-gray-600">{patient.ward} Ward • Age {patient.age}</p>
-                    <p className="text-xs text-gray-500">Registered by {patient.registeredBy}</p>
+            {safeRecentPatients.length > 0 ? (
+              <div className="space-y-4">
+                {safeRecentPatients.map(patient => (
+                  <div key={patient.id} className="flex justify-between items-center p-3 bg-gray-50 rounded">
+                    <div>
+                      <p className="font-medium">{patient.name}</p>
+                      <p className="text-sm text-gray-600">{patient.ward} Ward • Age {patient.age}</p>
+                      <p className="text-xs text-gray-500">Registered by {patient.registeredBy}</p>
+                    </div>
+                    <div className="text-right">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        patient.status === 'Critical' ? 'bg-red-100 text-red-800' :
+                        patient.status === 'Stable' ? 'bg-green-100 text-green-800' :
+                        'bg-blue-100 text-blue-800'
+                      }`}>
+                        {patient.status}
+                      </span>
+                      <p className="text-xs text-gray-500 mt-1">{patient.admissionDate}</p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      patient.status === 'Critical' ? 'bg-red-100 text-red-800' :
-                      patient.status === 'Stable' ? 'bg-green-100 text-green-800' :
-                      'bg-blue-100 text-blue-800'
-                    }`}>
-                      {patient.status}
-                    </span>
-                    <p className="text-xs text-gray-500 mt-1">{patient.admissionDate}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center text-gray-500">
+                <p>No recent patient registrations.</p>
+              </div>
+            )}
             <div className="mt-4">
               <Link
                 to="/register-patient"

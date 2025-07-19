@@ -1,8 +1,12 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+import { patientsAPI } from "../api";
+import { useAPIMutation } from "../hooks/useAPI";
 
 const PatientRegistration = () => {
   const navigate = useNavigate();
+  const { mutate: createPatient, loading: isSubmitting, error: submitError, success: submitSuccess } = useAPIMutation();
+
   const [formData, setFormData] = useState({
     fullName: "",
     age: "",
@@ -15,8 +19,6 @@ const PatientRegistration = () => {
     admissionType: "regular"
   });
   const [errors, setErrors] = useState({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitSuccess, setSubmitSuccess] = useState(false);
 
   const wards = [
     { value: "ICU", label: "ICU - Intensive Care Unit", description: "Critical care patients" },
@@ -92,43 +94,48 @@ const PatientRegistration = () => {
       return;
     }
 
-    setIsSubmitting(true);
-
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Transform form data to match API expectations
+      const patientData = {
+        name: formData.fullName,
+        age: parseInt(formData.age),
+        ward: formData.ward,
+        condition_notes: formData.conditionNotes,
+        emergency_contact: formData.emergencyContact,
+        contact_phone: formData.contactPhone,
+        blood_group: formData.bloodGroup,
+        allergies: formData.allergies,
+        admission_type: formData.admissionType
+      };
 
-      // In real app, this would be an API call:
-      // const response = await fetch('/api/patients', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(formData)
-      // });
+      await createPatient(() => patientsAPI.create(patientData), {
+        onSuccess: (data) => {
+          console.log("Patient registered successfully:", data);
 
-      console.log("Patient registered:", formData);
-      setSubmitSuccess(true);
-
-      // Reset form after successful submission
-      setTimeout(() => {
-        setFormData({
-          fullName: "",
-          age: "",
-          ward: "",
-          conditionNotes: "",
-          emergencyContact: "",
-          contactPhone: "",
-          bloodGroup: "",
-          allergies: "",
-          admissionType: "regular"
-        });
-        setSubmitSuccess(false);
-      }, 3000);
+          // Reset form after successful submission
+          setTimeout(() => {
+            setFormData({
+              fullName: "",
+              age: "",
+              ward: "",
+              conditionNotes: "",
+              emergencyContact: "",
+              contactPhone: "",
+              bloodGroup: "",
+              allergies: "",
+              admissionType: "regular"
+            });
+          }, 2000);
+        },
+        onError: (error) => {
+          console.error("Registration failed:", error);
+          setErrors({ submit: "Registration failed. Please try again." });
+        }
+      });
 
     } catch (error) {
-      console.error("Registration failed:", error);
+      console.error("Registration error:", error);
       setErrors({ submit: "Registration failed. Please try again." });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -143,7 +150,7 @@ const PatientRegistration = () => {
           </p>
           <div className="space-y-3">
             <button
-              onClick={() => setSubmitSuccess(false)}
+              onClick={() => window.location.reload()}
               className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
             >
               Register Another Patient
@@ -378,9 +385,9 @@ const PatientRegistration = () => {
             </div>
 
             {/* Submit Section */}
-            {errors.submit && (
+            {(errors.submit || submitError) && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <p className="text-red-600 text-sm">{errors.submit}</p>
+                <p className="text-red-600 text-sm">{errors.submit || submitError}</p>
               </div>
             )}
 

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import PropTypes from 'prop-types';
 
 const BedCard = ({ bed, onStatusUpdate }) => {
   const [isUpdating, setIsUpdating] = useState(false);
@@ -97,6 +98,23 @@ const BedCard = ({ bed, onStatusUpdate }) => {
       )}
     </div>
   );
+};
+
+BedCard.propTypes = {
+  bed: PropTypes.shape({
+    number: PropTypes.string.isRequired,
+    ward: PropTypes.string.isRequired,
+    status: PropTypes.string.isRequired,
+    patient: PropTypes.shape({
+      name: PropTypes.string,
+      age: PropTypes.number,
+      condition: PropTypes.string,
+    }),
+    lastCleaned: PropTypes.string,
+    assignedNurse: PropTypes.string,
+    emergencyAlert: PropTypes.string,
+  }).isRequired,
+  onStatusUpdate: PropTypes.func,
 };
 
 export default BedCard;

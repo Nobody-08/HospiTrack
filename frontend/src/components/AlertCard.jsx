@@ -1,3 +1,5 @@
+import PropTypes from 'prop-types';
+
 const AlertCard = ({ alert, onAcknowledge, onResolve }) => {
   const getSeverityColor = (severity) => {
     switch (severity?.toLowerCase()) {
@@ -123,6 +125,35 @@ const AlertCard = ({ alert, onAcknowledge, onResolve }) => {
       )}
     </div>
   );
+};
+
+AlertCard.propTypes = {
+  alert: PropTypes.shape({
+    id: PropTypes.string.isRequired,
+    severity: PropTypes.string.isRequired,
+    timestamp: PropTypes.string.isRequired,
+    title: PropTypes.string.isRequired,
+    message: PropTypes.string.isRequired,
+    location: PropTypes.string,
+    patient: PropTypes.string,
+    ward: PropTypes.string,
+    bed: PropTypes.string,
+    reportedBy: PropTypes.string,
+    vitalSigns: PropTypes.shape({
+      heartRate: PropTypes.number,
+      bloodPressure: PropTypes.string,
+      oxygenLevel: PropTypes.number,
+      temperature: PropTypes.number,
+    }),
+    acknowledged: PropTypes.bool,
+    resolved: PropTypes.bool,
+    acknowledgedBy: PropTypes.string,
+    acknowledgedAt: PropTypes.string,
+    resolvedBy: PropTypes.string,
+    resolvedAt: PropTypes.string,
+  }).isRequired,
+  onAcknowledge: PropTypes.func,
+  onResolve: PropTypes.func,
 };
 
 export default AlertCard;

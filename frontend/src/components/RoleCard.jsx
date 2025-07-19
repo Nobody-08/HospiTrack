@@ -4,10 +4,15 @@ import { motion } from "framer-motion";
 const RoleCard = ({ role, title, description }) => {
   const navigate = useNavigate();
 
+  const handleRoleClick = () => {
+    // Navigate to the auth page
+    navigate('/auth');
+  };
+
   return (
     <motion.div
       className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg cursor-pointer"
-      onClick={() => navigate(`/login/${role}`)}
+      onClick={handleRoleClick}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}

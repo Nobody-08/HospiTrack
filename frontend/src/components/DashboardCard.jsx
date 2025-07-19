@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import PropTypes from 'prop-types';
 
 const DashboardCard = ({ 
   title, 
@@ -63,7 +64,7 @@ const DashboardCard = ({
     </div>
   );
 
-  if (linkTo) {
+  if (linkTo && !onClick) {
     return (
       <Link to={linkTo}>
         <CardContent />
@@ -71,15 +72,32 @@ const DashboardCard = ({
     );
   }
 
-  if (onClick) {
+  if (onClick && !linkTo) {
     return (
-      <div onClick={onClick}>
+      <div
+        onClick={onClick}
+        role="button"
+        tabIndex={0}
+        onKeyPress={e => { if (e.key === 'Enter') onClick(); }}
+      >
         <CardContent />
       </div>
     );
   }
 
   return <CardContent />;
+};
+
+DashboardCard.propTypes = {
+  title: PropTypes.string.isRequired,
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  icon: PropTypes.node,
+  color: PropTypes.string,
+  subtitle: PropTypes.string,
+  trend: PropTypes.number,
+  linkTo: PropTypes.string,
+  linkText: PropTypes.string,
+  onClick: PropTypes.func,
 };
 
 export default DashboardCard;

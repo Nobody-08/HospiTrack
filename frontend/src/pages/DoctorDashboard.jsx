@@ -9,124 +9,11 @@ const DoctorDashboard = () => {
   const [emergencyAlerts, setEmergencyAlerts] = useState([]);
   const [selectedWard, setSelectedWard] = useState("all");
 
-  // Mock data - in real app, this would come from API
   useEffect(() => {
-    const mockPatients = [
-      {
-        id: 1,
-        name: "Meena Sharma",
-        age: 45,
-        ward: "ICU",
-        bed: "101",
-        status: "Stable",
-        diagnosis: "Post-operative recovery",
-        admissionDate: "2025-01-10",
-        vitalSigns: {
-          heartRate: 72,
-          bloodPressure: "120/80",
-          temperature: 98.6,
-          oxygenLevel: 98
-        },
-        lastNotes: "Continue current medication. Monitor vitals every 2 hours.",
-        notes: "Patient responding well to treatment. Pain levels manageable."
-      },
-      {
-        id: 2,
-        name: "Rajesh Kumar",
-        age: 62,
-        ward: "General",
-        bed: "205",
-        status: "Under Observation",
-        diagnosis: "Diabetes management",
-        admissionDate: "2025-01-12",
-        vitalSigns: {
-          heartRate: 85,
-          bloodPressure: "140/90",
-          temperature: 99.1,
-          oxygenLevel: 96
-        },
-        lastNotes: "Blood sugar levels stabilizing. Adjust insulin dosage.",
-        notes: ""
-      },
-      {
-        id: 3,
-        name: "Priya Patel",
-        age: 28,
-        ward: "Maternity",
-        bed: "301",
-        status: "Recovering",
-        diagnosis: "Post-delivery care",
-        admissionDate: "2025-01-14",
-        vitalSigns: {
-          heartRate: 68,
-          bloodPressure: "110/70",
-          temperature: 98.4,
-          oxygenLevel: 99
-        },
-        lastNotes: "Normal recovery progress. Ready for discharge tomorrow.",
-        notes: "Excellent recovery. Baby and mother both healthy."
-      },
-      {
-        id: 4,
-        name: "Amit Singh",
-        age: 35,
-        ward: "ICU",
-        bed: "103",
-        status: "Critical",
-        diagnosis: "Cardiac emergency",
-        admissionDate: "2025-01-15",
-        vitalSigns: {
-          heartRate: 110,
-          bloodPressure: "160/100",
-          temperature: 100.2,
-          oxygenLevel: 92
-        },
-        lastNotes: "Requires immediate attention. Monitor cardiac function closely.",
-        notes: "Patient stabilized after emergency intervention. Continue intensive monitoring."
-      }
-    ];
-
-    const mockAlerts = [
-      {
-        id: 1,
-        severity: "critical",
-        title: "Oxygen Level Drop",
-        message: "Patient in ICU bed 103 showing decreased oxygen saturation",
-        timestamp: new Date().toISOString(),
-        location: "ICU",
-        patient: "Amit Singh",
-        ward: "ICU",
-        bed: "103",
-        reportedBy: "Nurse Station",
-        vitalSigns: {
-          oxygenLevel: 92,
-          heartRate: 110
-        },
-        acknowledged: false
-      },
-      {
-        id: 2,
-        severity: "high",
-        title: "Elevated Heart Rate",
-        message: "Patient showing sustained elevated heart rate",
-        timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-        location: "General Ward",
-        patient: "Rajesh Kumar",
-        ward: "General",
-        bed: "205",
-        reportedBy: "Monitoring System",
-        vitalSigns: {
-          heartRate: 85,
-          bloodPressure: "140/90"
-        },
-        acknowledged: true,
-        acknowledgedBy: "Dr. Smith",
-        acknowledgedAt: new Date(Date.now() - 25 * 60 * 1000).toISOString()
-      }
-    ];
-
-    setPatients(mockPatients);
-    setEmergencyAlerts(mockAlerts);
+    // In a real app, you would fetch this data from an API
+    // For now, we'll just initialize with empty arrays
+    setPatients([]);
+    setEmergencyAlerts([]);
   }, []);
 
   const handleUpdateNotes = (patientId, notes) => {
@@ -228,7 +115,7 @@ const DoctorDashboard = () => {
           />
           <DashboardCard
             title="OPD Today"
-            value="15"
+            value="0"
             icon="📅"
             color="green"
             subtitle="Scheduled appointments"
@@ -238,12 +125,11 @@ const DoctorDashboard = () => {
         </div>
 
         {/* Emergency Alerts Section */}
-        {emergencyAlerts.filter(a => !a.resolved).length > 0 && (
+        {emergencyAlerts.length > 0 ? (
           <div className="mb-8">
             <h2 className="text-xl font-bold text-gray-900 mb-4">🚨 Active Emergency Alerts</h2>
             <div className="space-y-4">
               {emergencyAlerts
-                .filter(alert => !alert.resolved)
                 .slice(0, 3)
                 .map(alert => (
                   <AlertCard
@@ -254,16 +140,21 @@ const DoctorDashboard = () => {
                   />
                 ))}
             </div>
-            {emergencyAlerts.filter(a => !a.resolved).length > 3 && (
+            {emergencyAlerts.length > 3 && (
               <div className="mt-4 text-center">
                 <Link
                   to="/emergency-alerts"
                   className="text-blue-600 hover:text-blue-800 font-medium"
                 >
-                  View all {emergencyAlerts.filter(a => !a.resolved).length} alerts →
+                  View all {emergencyAlerts.length} alerts →
                 </Link>
               </div>
             )}
+          </div>
+        ) : (
+          <div className="bg-white rounded-lg shadow-md p-6 text-center text-gray-500">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">🚨 Active Emergency Alerts</h2>
+            <p>No active alerts.</p>
           </div>
         )}
 
